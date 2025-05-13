@@ -85,6 +85,16 @@ const DashboardPage = () => {
                 Sentiment Score: {currentAnalysis?.sentiment?.sentiment || 'N/A'}
               </Typography>
             </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6">
+                Final Score: {currentAnalysis?.sentiment?.final_score || 'N/A'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="h6">
+                Total Grammar Errors: {currentAnalysis?.sentiment?.num_grammar_errors || 'N/A'}
+              </Typography>
+            </Grid>
             {currentAnalysis && (
               <Grid item xs={12}>
                 <DashboardComponent performance={currentAnalysis} filename={selectedFile} />

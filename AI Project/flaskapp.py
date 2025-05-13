@@ -16,6 +16,14 @@ import joblib
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import pandas as pd
 
+import language_tool_python
+import spacy
+
+
+# Initialize tools
+nlp = spacy.load('en_core_web_sm')
+tool = language_tool_python.LanguageTool('en-US')
+
 app = Flask(__name__)
 CORS(app)
 
@@ -107,6 +115,11 @@ def preprocess_essays(essays):
 
 # Prediction function
 def predict_sentiment(essay):
+    
+    grammar_errors = check_grammar_spelling(essay)
+    num_grammar_errors = len(grammar_errors)
+
+
     processed_essay = preprocess_essays([essay])
     essay_vec = vectorizer.transform(processed_essay).toarray()
     sentiment = analyzer.polarity_scores(essay)['compound']
@@ -118,11 +131,93 @@ def predict_sentiment(essay):
     features = pd.DataFrame(np.hstack([essay_vec, [[intent, sentiment]]]), columns=feature_names)
     features = imputer.transform(features)
     prediction = ridge_model.predict(features)
+   
+    final_score = calculate_final_score(num_grammar_errors, intent, sentiment,  float(prediction[0]))
+    
+    # return {
+    #     'predicted_grade': float(prediction[0]),
+    #     'sentiment': sentiment,
+    #     'intent': intent,
+    #     'grammar_errors': grammar_errors,
+    #     'num_grammar_errors': num_grammar_errors
+    # }
     return {
-        'predicted_grade': float(prediction[0]),
-        'sentiment': sentiment,
-        'intent': intent
-    }
+            'predicted_grade': float(prediction[0]),
+            'sentiment': sentiment,
+            'intent': intent,
+            'grammar_errors': grammar_errors,
+            'num_grammar_errors': num_grammar_errors,
+            'final_score': final_score
+        }
+
+
+
+
+
+
+
+# Grammar and spelling check
+def check_grammar_spelling(essay):
+    matches = tool.check(essay)
+    errors = []
+    for match in matches:
+        errors.append({
+            'message': match.message,
+            'incorrect': essay[match.offset:match.offset + match.errorLength],
+            'suggestions': match.replacements,
+            'context': match.context
+        })
+    return errors
+
+# Prediction function with grammar check
+def predict_performance(essay):
+    # Check grammar and spelling
+    grammar_errors = check_grammar_spelling(essay)
+    if grammar_errors:
+        return {
+            'grammar_errors': grammar_errors,
+            'num_grammar_errors': len(grammar_errors)
+        }
+
+
+# Calculate final score
+def calculate_final_score(num_grammar_errors, intent_score, sentiment_score, predicted_grade, 
+                         max_grammar_score=11.0, max_intent_score=11.0, max_sentiment_score=11.0, 
+                         max_grade_score=66.0, max_errors=10):
+    """
+    Calculate a final score with 11% grammar, 11% intent, 11% sentiment, 66% grade.
+    
+    Args:
+        num_grammar_errors (int): Number of grammar/spelling errors
+        intent_score (int): Intent class from BERT (0-4)
+        sentiment_score (float): Sentiment score from VADER (-1 to 1)
+        predicted_grade (float): Predicted grade from Ridge model (0-20)
+        max_grammar_score (float): Maximum score for grammar (default: 11.0)
+        max_intent_score (float): Maximum score for intent (default: 11.0)
+        max_sentiment_score (float): Maximum score for sentiment (default: 11.0)
+        max_grade_score (float): Maximum score for grade (default: 66.0)
+        max_errors (int): Number of errors at which grammar score reaches 0 (default: 10)
+    
+    Returns:
+        float: Final score (0-100)
+    """
+    # Grammar score: Linearly decrease from max_grammar_score
+    grammar_penalty = min(num_grammar_errors / max_errors, 1.0)
+    grammar_score = max_grammar_score * (1 - grammar_penalty)
+    
+    # Intent score: Scale intent (0-4) to max_intent_score
+    intent_score_normalized = (intent_score / 4.0) * max_intent_score
+    
+    # Sentiment score: Scale sentiment (-1 to 1) to max_sentiment_score (0 to 11)
+    sentiment_score_normalized = ((sentiment_score + 1) / 2.0) * max_sentiment_score
+    
+    # Grade score: Scale predicted grade (0-20) to max_grade_score
+    grade_score = (predicted_grade / 20.0) * max_grade_score
+    
+    # Final score: Weighted sum (11% grammar, 11% intent, 11% sentiment, 66% grade)
+    final_score = grammar_score + intent_score_normalized + sentiment_score_normalized + grade_score
+    
+    return final_score
 
 
 
@@ -155,12 +250,18 @@ def predict_grade():
         },
         "sentiment":{
             "sentiment": round(result["sentiment"], 2),
-            "Intent Class": result['intent']
+            "Intent Class": result['intent'],
+            "final_score": round(result["final_score"], 2),
+            "num_grammar_errors": result['num_grammar_errors'],
         }
+      
     }
     print("response",response)
     print(f"Sentiment Score: {result['sentiment']:.2f}")
     print(f"Intent Class: {result['intent']}")
+    
+    
+    
     return jsonify(response)
 
 # @app.route('/predict', methods=['POST'])
