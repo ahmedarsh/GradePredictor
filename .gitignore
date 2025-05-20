@@ -10,6 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+/AI\ Project/node_modules/
 dist/
 downloads/
 eggs/
@@ -172,3 +173,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+.DS_Store

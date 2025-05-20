@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Typography, Paper, Grid, Box, Drawer, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
-import DashboardComponent from '../components/Dashboard'; // Your actual Dashboard visualization component
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
+  Paper,
+} from '@mui/material';
+import DashboardMainContent from '../components/DashboardMainContent';
 
 const DashboardPage = () => {
   const location = useLocation();
@@ -33,16 +42,19 @@ const DashboardPage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box component="main" sx={{ flexGrow: 1, px: 4, backgroundColor: '#f9f9f9' }}>
+
       {/* Sidebar */}
+
       <Drawer
-        variant="permanent"
-        sx={{
-          width: 240,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: 240, boxSizing: 'border-box' },
-        }}
-      >
+  variant="permanent"
+  sx={{
+    width: 200,
+    flexShrink: 0,
+    [`& .MuiDrawer-paper`]: { width: 200, boxSizing: 'border-box' },
+  }}
+>
+
         <Box sx={{ p: 2 }}>
           <Typography variant="h6" gutterBottom>
             Select Report
@@ -63,44 +75,9 @@ const DashboardPage = () => {
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Analysis Results
-        </Typography>
-
+      <Box component="main" sx={{ flexGrow: 1, px: 4 }}>
         {currentAnalysis ? (
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12}>
-              <Typography variant="h6">
-                Report for: <Typography component="span" sx={{ fontWeight: 'bold' }}>{selectedFile}</Typography>
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6">
-                Predicted Final Grade: {currentAnalysis?.overall?.score || 'N/A'}
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6">
-                Sentiment Score: {currentAnalysis?.sentiment?.sentiment || 'N/A'}
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6">
-                Final Score: {currentAnalysis?.sentiment?.final_score || 'N/A'}
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="h6">
-                Total Grammar Errors: {currentAnalysis?.sentiment?.num_grammar_errors || 'N/A'}
-              </Typography>
-            </Grid>
-            {currentAnalysis && (
-              <Grid item xs={12}>
-                <DashboardComponent performance={currentAnalysis} filename={selectedFile} />
-              </Grid>
-            )}
-          </Grid>
+          <DashboardMainContent performance={currentAnalysis} filename={selectedFile} />
         ) : (
           <Typography variant="subtitle1">
             No report selected. Please choose a file from the sidebar.

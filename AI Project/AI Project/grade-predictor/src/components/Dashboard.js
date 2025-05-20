@@ -4,7 +4,7 @@ import SubjectScore from "./SubjectScore";
 import { FeatureChart } from "./FeatureChart";
 export default function Dashboard({ performance }) {
   return (
-    <Box sx={{ padding: 4 }}>
+    <Box sx={{ width: '100%', px: 2 }}>
       <Typography variant="h4" gutterBottom>
         🎓 Student Performance Overview
       </Typography>

@@ -114,7 +114,7 @@ def preprocess_essays(essays):
     return processed_essays
 
 # Prediction function
-def predict_sentiment(essay):
+def predict_sentiment(essay, prediction):
     
     grammar_errors = check_grammar_spelling(essay)
     num_grammar_errors = len(grammar_errors)
@@ -130,9 +130,10 @@ def predict_sentiment(essay):
     feature_names = list(vectorizer.get_feature_names_out()) + ['intent', 'sentiment']
     features = pd.DataFrame(np.hstack([essay_vec, [[intent, sentiment]]]), columns=feature_names)
     features = imputer.transform(features)
-    prediction = ridge_model.predict(features)
+   # prediction = ridge_model.predict(features)
+
    
-    final_score = calculate_final_score(num_grammar_errors, intent, sentiment,  float(prediction[0]))
+    final_score = calculate_final_score(num_grammar_errors, intent, sentiment,  prediction)
     
     # return {
     #     'predicted_grade': float(prediction[0]),
@@ -142,7 +143,7 @@ def predict_sentiment(essay):
     #     'num_grammar_errors': num_grammar_errors
     # }
     return {
-            'predicted_grade': float(prediction[0]),
+           # 'predicted_grade': float(prediction[0]),
             'sentiment': sentiment,
             'intent': intent,
             'grammar_errors': grammar_errors,
@@ -229,23 +230,23 @@ def predict_grade():
     # predicted_grade = predict_final_grade(user_input_df)
     # return jsonify({'predicted_grade': predicted_grade[0]})
     
-    
-    result = predict_sentiment(user_input_df['essay'][0])
 
     prediction = predictor.predict_student_performance(user_input_df)
     explanation = predictor.explain_student(user_input_df)
+    print("overall_score", prediction["overall_score"])
+    result = predict_sentiment(user_input_df['essay'][0], prediction["overall_score"])
 
     response = {
         "math": {
-            "score": round(prediction["math_score"], 2),
+            "score": (round(prediction["math_score"])/20)*100,
             "top_features": explanation["math"]
         },
         "portuguese": {
-            "score": round(prediction["portuguese_score"], 2),
+            "score": (round(prediction["portuguese_score"])/20)*100,
             "top_features": explanation["portuguese"]
         },
         "overall": {
-            "score": round(prediction["overall_score"], 2),
+            "score": (round(prediction["overall_score"])/20)*100,
             "top_features": explanation["aggregator"]
         },
         "sentiment":{

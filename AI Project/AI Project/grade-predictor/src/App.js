@@ -10,7 +10,7 @@ function AppLayout() {
   return (
     <>
       <NavigationBar />
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Container>
         <Outlet />
       </Container>
     </>
